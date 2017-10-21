@@ -1,0 +1,85 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'jacoco'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'maven'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'org.sonarqube'
+apply plugin: 'maven-publish'
+
+setDescription("java-hello-world")
+
+println "Project name: " + project.description
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.destination file("${buildDir}/jacocoHtml")
+    }
+}
+
+tasks.withType(Test) {
+    testLogging {
+        events TestLogEvent.FAILED,
+               TestLogEvent.PASSED,
+               TestLogEvent.SKIPPED,
+               TestLogEvent.STANDARD_ERROR,
+               TestLogEvent.STANDARD_OUT
+        exceptionFormat TestExceptionFormat.FULL
+        showCauses true
+        showExceptions true
+        showStackTraces true
+    }
+
+    reports {
+        junitXml.enabled = true
+        html.enabled = true
+        html.destination "build/reports/html"
+        junitXml.destination "build/reports/xml"
+    }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter-web:1.5.2.RELEASE')
+    testCompile('org.springframework.boot:spring-boot-starter-test:1.5.2.RELEASE')
+    testRuntime('junit:junit:4.12')
+    testRuntime('org.jacoco:jacoco-maven-plugin:0.7.9')
+    providedRuntime "org.springframework.boot:spring-boot-starter-tomcat"
+}
+
+sonarqube {
+    properties {
+        properties["sonar.jacoco.reportPath"] = "**/**.exec"
+        properties["sonar.host.url"] = sonar_url
+        properties["sonar.login"] = sonar_username
+        properties["sonar.password"] = sonar_password
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.web
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url nexus_url
+            credentials {
+                username nexus_username
+                password nexus_password
+            }
+        }
+    }
+}
